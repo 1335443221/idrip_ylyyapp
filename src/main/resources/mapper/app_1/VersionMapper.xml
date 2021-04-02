@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.VersionMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.Version">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="version" jdbcType="VARCHAR" property="version" />
+    <result column="is_force" jdbcType="INTEGER" property="isForce" />
+    <result column="upload_at" jdbcType="INTEGER" property="uploadAt" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.sl.ylyy.app_1.entity.VersionWithBLOBs">
+    <result column="description" jdbcType="LONGVARCHAR" property="description" />
+    <result column="download_url" jdbcType="LONGVARCHAR" property="downloadUrl" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, version, is_force, upload_at
+  </sql>
+  <sql id="Blob_Column_List">
+    description, download_url
+  </sql>
+
+  <select id="selectLastestVersion" resultType="java.util.Map">
+    select version,is_force,upload_at,description,download_url,
+    from_unixtime(upload_at,'%Y-%m-%d %T') as upload_at
+    from version
+    group by version desc limit 1
+  </select>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from version
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from version
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.VersionWithBLOBs">
+    insert into version (id, version, is_force,
+      upload_at, description, download_url
+      )
+    values (#{id,jdbcType=INTEGER}, #{version,jdbcType=VARCHAR}, #{isForce,jdbcType=INTEGER},
+      #{uploadAt,jdbcType=INTEGER}, #{description,jdbcType=LONGVARCHAR}, #{downloadUrl,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.VersionWithBLOBs">
+    insert into version
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="version != null">
+        version,
+      </if>
+      <if test="isForce != null">
+        is_force,
+      </if>
+      <if test="uploadAt != null">
+        upload_at,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="downloadUrl != null">
+        download_url,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="version != null">
+        #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="isForce != null">
+        #{isForce,jdbcType=INTEGER},
+      </if>
+      <if test="uploadAt != null">
+        #{uploadAt,jdbcType=INTEGER},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="downloadUrl != null">
+        #{downloadUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.VersionWithBLOBs">
+    update version
+    <set>
+      <if test="version != null">
+        version = #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="isForce != null">
+        is_force = #{isForce,jdbcType=INTEGER},
+      </if>
+      <if test="uploadAt != null">
+        upload_at = #{uploadAt,jdbcType=INTEGER},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="downloadUrl != null">
+        download_url = #{downloadUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.sl.ylyy.app_1.entity.VersionWithBLOBs">
+    update version
+    set version = #{version,jdbcType=VARCHAR},
+      is_force = #{isForce,jdbcType=INTEGER},
+      upload_at = #{uploadAt,jdbcType=INTEGER},
+      description = #{description,jdbcType=LONGVARCHAR},
+      download_url = #{downloadUrl,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.Version">
+    update version
+    set version = #{version,jdbcType=VARCHAR},
+      is_force = #{isForce,jdbcType=INTEGER},
+      upload_at = #{uploadAt,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

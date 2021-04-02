@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.MalfunctionMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.Malfunction">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="location" jdbcType="VARCHAR" property="location" />
+    <result column="fix_by" jdbcType="INTEGER" property="fixBy" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="source" jdbcType="INTEGER" property="source" />
+    <result column="create_by" jdbcType="INTEGER" property="createBy" />
+    <result column="storekeeper" jdbcType="INTEGER" property="storekeeper" />
+    <result column="text_desc" jdbcType="VARCHAR" property="textDesc" />
+    <result column="image_desc" jdbcType="VARCHAR" property="imageDesc" />
+    <result column="audio_desc" jdbcType="VARCHAR" property="audioDesc" />
+    <result column="finish_desc" jdbcType="VARCHAR" property="finishDesc" />
+    <result column="create_at" jdbcType="INTEGER" property="createAt" />
+    <result column="appoint_at" jdbcType="INTEGER" property="appointAt" />
+    <result column="accept_at" jdbcType="VARCHAR" property="acceptAt" />
+    <result column="hangup_at" jdbcType="INTEGER" property="hangupAt" />
+    <result column="expire_at" jdbcType="VARCHAR" property="expireAt" />
+    <result column="fix_at" jdbcType="INTEGER" property="fixAt" />
+    <result column="check_at" jdbcType="INTEGER" property="checkAt" />
+    <result column="is_push" jdbcType="INTEGER" property="isPush" />
+    <result column="department_id" jdbcType="INTEGER" property="departmentId"/>
+    <result column="company_id" jdbcType="INTEGER" property="companyId"/>
+    <result column="is_company_manager" javaType="INTEGER" property="isCompanyManager"/>
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.sl.ylyy.app_1.entity.MalfunctionWithBLOBs">
+    <result column="question" jdbcType="LONGVARCHAR" property="question" />
+    <result column="material" jdbcType="LONGVARCHAR" property="material" />
+    <result column="remark" jdbcType="LONGVARCHAR" property="remark" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, location, fix_by, status, `type`, source, create_by, storekeeper, text_desc, image_desc,
+    audio_desc, finish_desc, create_at, appoint_at, accept_at, hangup_at, expire_at, 
+    fix_at, check_at, is_push,department_id,is_company_manager,company_id
+  </sql>
+  <sql id="Blob_Column_List">
+    question, material remark
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from malfunction
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectStatusByLocation" parameterType="java.util.Map" resultType="java.util.Map">
+    select status,id from malfunction
+    where location = #{location} and create_by=#{createBy}
+  </select>
+
+  <select id="selectExpiredIdList" resultType="java.util.Map">
+    select m.id,ml.fix_by,m.hangup_at from malfunction m
+    left join malfunction_log ml on m.id=ml.malfunction_id
+    where m.status=7 and m.hangup_at &lt; unix_timestamp(now())
+    <!--and
+    (<if test="fixBys !=null and fixBys.size()>0">
+      ml.fix_by in
+      <foreach collection="fixBys" item="fixBys" index="index" open="(" close=")" separator=",">
+        #{fixBys}
+      </foreach>
+    </if> or ml.fix_by is null)-->
+  </select>
+
+  <select id="selectCountByPatrolAndSource" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+    select count(id)
+    from malfunction where create_by = #{createBy} and source=1
+  </select>
+
+  <select id="selectBymid" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select m.id,m.location as name,mt.type_name,m.question,from_unixtime(m.fix_at,'%Y-%m-%d %T') as fix_at,
+    m.fix_by,(select user_name from user where id=m.fix_by) as fix_name,(select user_name from user where
+    id=m.create_by) as creat_name,m.remark,<!--from_unixtime(m.expire_at,'%Y-%m-%d %H:%I:%S') as expire_at,-->
+    m.expire_at,m.finish_desc,m.image_desc,m.audio_desc,m.material,m.status
+    <!-- ,ml.reason,(select user_name from user where id=ml.fix_by) as reason_name-->
+    from malfunction m
+    left join malfunction_type mt on m.type=mt.id
+    <!--left join malfunction_log ml on m.id = ml.malfunction_id-->
+    where m.id=#{mid}
+  </select>
+
+  <select id="selectMalfunctionList" parameterType="java.util.Map" resultType="java.util.Map">
+    select
+    m.id,m.location as name,mt.type_name,m.fix_by as fix_by,from_unixtime(m.create_at,'%Y-%m-%d %T') as create_at,
+    m.status,m.question,m.create_by as create_by
+    from malfunction m
+    left join malfunction_type mt on m.type=mt.id
+    where
+    m.company_id=#{companyId}
+    AND m.status in
+    <foreach collection="statusList" item="statusList" index="index" open="(" close=")" separator=",">
+      #{statusList}
+    </foreach>
+    <if test="creatAt!=null">
+       and m.create_at &lt; #{creatAt}
+    </if>
+
+    <if test="fixBys !=null and fixBys.size()>0">
+     and (m.fix_by in
+        <foreach collection="fixBys" item="fixBys" index="index" open="(" close=")" separator=",">
+          #{fixBys}
+        </foreach>
+     or m.fix_by is null)
+    </if>
+
+    <if test="departmentList !=null and departmentList.size()>0">
+      and m.department_id in
+      <foreach collection="departmentList" item="departmentList" index="index" open="(" close=")" separator=",">
+        #{departmentList}
+      </foreach>
+    </if>
+
+    order by m.create_at desc
+    limit 0,#{pageSize}
+  </select>
+
+  <select id="selectMalfunctionListCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(*) from malfunction
+    where
+    company_id=#{companyId}
+    AND status in
+    <foreach collection="statusList" item="statusList" index="index" open="(" close=")" separator=",">
+      #{statusList}
+    </foreach>
+    <if test="fixBys!=null and fixBys.size()!=0">
+    and (fix_by in
+      <foreach collection="fixBys" item="fixBys" index="index" open="(" close=")" separator=",">
+        #{fixBys}
+      </foreach>
+    or fix_by is null)
+    </if>
+
+    <if test="departmentList !=null and departmentList.size()>0">
+      and department_id in
+      <foreach collection="departmentList" item="departmentList" index="index" open="(" close=")" separator=",">
+        #{departmentList}
+      </foreach>
+    </if>
+
+  </select>
+
+  <select id="selectFinishedAccept" parameterType="java.util.Map" resultType="java.util.Map">
+    select distinct m.id,m.location as `name`,
+    (case when m.accept_at is not null then from_unixtime(m.accept_at,'%H:%I')
+    else from_unixtime(m.appoint_at,'%H:%I') end) as `time`,m.status
+    from malfunction m
+    left join malfunction_log ml on m.id=ml.malfunction_id
+    where ((ml.appoint_at between #{startTime} and #{endTime}) or (ml.accept_at between #{startTime} and #{endTime}))
+    <if test="userIds!=null and userIds.size()!=0">
+      and (m.fix_by in
+      <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+        #{userIds}
+      </foreach>
+      or ml.appoint_by in
+      <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+        #{userIds}
+      </foreach> )
+    </if>
+
+    <if test="userIdsByGroup != null and userIdsByGroup.size()>0">
+      and (m.fix_by in
+      <foreach collection="userIdsByGroup" item="userIdsByGroup" index="index" open="(" close=")" separator=",">
+        #{userIdsByGroup}
+      </foreach>
+      or ml.appoint_by in
+      <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+        #{userIds}
+      </foreach>)
+    </if>
+    <if test="isFinished==1">
+      and (m.status=5 or m.status=6)
+    </if>
+    <if test="isFinished==0">
+      and (m.status=1 or m.status=2 or m.status=3 or m.status=7 or m.status=8)
+    </if>
+  </select>
+
+  <select id="selectMalfunctionLog" parameterType="java.util.Map" resultType="java.util.Map">
+     select distinct m.id,m.location as `name`,ml.fix_at as `time`,ml.id as ml_id,
+     mt.type_name ,m.status
+     from malfunction m
+     left join malfunction_type mt on m.type=mt.id
+     left join(
+    SELECT * FROM (SELECT * FROM malfunction_log  ORDER BY id DESC)mll  GROUP BY mll.malfunction_id
+    )ml on m.id=ml.malfunction_id
+    where ((ml.appoint_at between #{startTime} and #{endTime}) or (ml.accept_at between #{startTime} and #{endTime}))
+    <if test="userIds!=null and userIds.size()!=0">
+    and (m.fix_by in
+        <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+           #{userIds}
+        </foreach>
+        or ml.appoint_by in
+        <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+           #{userIds}
+        </foreach> )
+     </if>
+
+     <if test="userIdsByGroup != null and userIdsByGroup.size()>0">
+       and (m.fix_by in
+       <foreach collection="userIdsByGroup" item="userIdsByGroup" index="index" open="(" close=")" separator=",">
+         #{userIdsByGroup}
+       </foreach>
+       or ml.appoint_by in
+       <foreach collection="userIds" item="userIds" index="index" open="(" close=")" separator=",">
+         #{userIds}
+       </foreach>)
+     </if>
+    and m.status!=4
+    <!--<if test="isCharge==3">
+      and m.is_company_manager=0
+    </if>-->
+    <if test="isFinished==1">
+      and (m.status=5 or m.status=6)
+    </if>
+  </select>
+
+  <select id="selectGroupByMType" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+    select u.id from user u
+    left join group g on u.id=g.group_manager
+    left join group_malfunction_type_relation gmt on gmt.group_id=g.id
+    where gmt.malfunction_type_id=#{type}
+  </select>
+
+
+  <select id="selectCheakMalfunctionByDepartmentId" parameterType="java.lang.Integer" resultType="java.lang.String">
+    select d.check_malfunction from `department` d
+    where d.id=#{departmentId}
+  </select>
+  
+  <select id="selectFinishedLogCount" parameterType="java.util.Map" resultType="java.util.Map">
+    select count(m.id)
+    from malfunction m
+    left join malfunction_type mt on m.type=mt.id
+    left join malfunction_log ml on m.id=ml.malfunction_id
+    where ((ml.appoint_at between #{startTime} and #{endTime}) or (ml.accept_at between #{startTime} and #{endTime}))
+
+    (<if test="fixBys!=null and fixBys.size()!=0">
+    and m.fix_by in
+        <foreach collection="fixBys" item="fixBys" index="index" open="(" close=")" separator=",">
+           #{fixBys}
+        </foreach>
+      </if>
+    )
+    <if test="userIdsByGroup != null and userIdsByGroup.size()>0">
+      and m.fix_by in
+      <foreach collection="userIdsByGroup" item="userIdsByGroup" index="index" open="(" close=")" separator=",">
+        #{userIdsByGroup}
+      </foreach>
+    </if>
+  </select>
+
+  <select id="selectMalfunctionLogCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(ml.id) from malfunction_log ml
+    left join malfunction m on ml.malfunction_id=m.id
+    where ((ml.appoint_at between #{startTime} and #{endTime}) or (ml.accept_at between #{startTime} and #{endTime}))
+    or (m.create_at between #{startTime} and #{endTime})
+      <if test="ids != null and ids.size()>0 ">
+        and ml.malfunction_id in
+        <foreach collection="ids" item="ids" index="index" open="(" close=")" separator=",">
+          #{ids}
+        </foreach>
+      </if>
+    <if test="isFinished==1">
+      and ml.fix_at is not null
+    </if>
+    <if test="user_id!=null">
+      and ml.appoint_by=#{user_id}
+    </if>
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from malfunction
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.MalfunctionWithBLOBs">
+    insert into malfunction (id, location, fix_by,
+      status, `type`, source,
+      create_by, storekeeper, text_desc, 
+      image_desc, audio_desc, finish_desc, 
+      create_at, appoint_at, accept_at, 
+      hangup_at, expire_at, fix_at, 
+      check_at, is_push, question, 
+      material, remark,department_id,company_id)
+    values (#{id,jdbcType=INTEGER}, #{location,jdbcType=VARCHAR}, #{fixBy,jdbcType=INTEGER}, 
+      #{status,jdbcType=INTEGER}, #{type,jdbcType=INTEGER}, #{source,jdbcType=INTEGER}, 
+      #{createBy,jdbcType=INTEGER}, #{storekeeper,jdbcType=INTEGER}, #{textDesc,jdbcType=VARCHAR}, 
+      #{imageDesc,jdbcType=VARCHAR}, #{audioDesc,jdbcType=VARCHAR}, #{finishDesc,jdbcType=VARCHAR}, 
+      #{createAt,jdbcType=INTEGER}, #{appointAt,jdbcType=INTEGER}, #{acceptAt,jdbcType=VARCHAR}, 
+      #{hangupAt,jdbcType=INTEGER}, #{expireAt,jdbcType=VARCHAR}, #{fixAt,jdbcType=INTEGER}, 
+      #{checkAt,jdbcType=INTEGER}, #{isPush,jdbcType=INTEGER}, #{question,jdbcType=LONGVARCHAR}, 
+      #{material,jdbcType=LONGVARCHAR}, #{remark,jdbcType=LONGVARCHAR},#{departmentId},#{companyId})
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.MalfunctionWithBLOBs" useGeneratedKeys="true" keyProperty="id">
+    insert into malfunction
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="location != null">
+        location,
+      </if>
+      <if test="fixBy != null">
+        fix_by,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="type != null">
+        `type`,
+      </if>
+      <if test="source != null">
+        source,
+      </if>
+      create_at,
+      <if test="createBy != null">
+        create_by,
+      </if>
+      <if test="storekeeper != null">
+        storekeeper,
+      </if>
+      <if test="textDesc != null">
+        text_desc,
+      </if>
+      <if test="imageDesc != null">
+        image_desc,
+      </if>
+      <if test="audioDesc != null">
+        audio_desc,
+      </if>
+      <if test="finishDesc != null">
+        finish_desc,
+      </if>
+      <if test="appointAt != null">
+        appoint_at,
+      </if>
+      <if test="acceptAt != null">
+        accept_at,
+      </if>
+      <if test="hangupAt != null">
+        hangup_at,
+      </if>
+      <if test="expireAt != null">
+        expire_at,
+      </if>
+      <if test="fixAt != null">
+        fix_at,
+      </if>
+      <if test="checkAt != null">
+        check_at,
+      </if>
+      <if test="isPush != null">
+        is_push,
+      </if>
+      <if test="question != null">
+        question,
+      </if>
+      <if test="material != null">
+        material,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+      department_id,
+      company_id,
+      is_company_manager
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="location != null">
+        #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="fixBy != null">
+        #{fixBy,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="type != null">
+        #{type,jdbcType=INTEGER},
+      </if>
+      <if test="source != null">
+        #{source,jdbcType=INTEGER},
+      </if>
+      unix_timestamp(now()),
+      <if test="createBy != null">
+        #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="storekeeper != null">
+        #{storekeeper,jdbcType=INTEGER},
+      </if>
+      <if test="textDesc != null">
+        #{textDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="finishDesc != null">
+        #{finishDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="appointAt != null">
+        #{appointAt,jdbcType=INTEGER},
+      </if>
+      <if test="acceptAt != null">
+        #{acceptAt,jdbcType=VARCHAR},
+      </if>
+      <if test="hangupAt != null">
+        #{hangupAt,jdbcType=INTEGER},
+      </if>
+      <if test="expireAt != null">
+        #{expireAt,jdbcType=VARCHAR},
+      </if>
+      <if test="fixAt != null">
+        #{fixAt,jdbcType=INTEGER},
+      </if>
+      <if test="checkAt != null">
+        #{checkAt,jdbcType=INTEGER},
+      </if>
+      <if test="isPush != null">
+        #{isPush,jdbcType=INTEGER},
+      </if>
+      <if test="question != null">
+        #{question,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="material != null">
+        #{material,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=LONGVARCHAR},
+      </if>
+      #{departmentId},#{companyId},#{isCompanyManager}
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.MalfunctionWithBLOBs">
+    update malfunction
+    <set>
+      <if test="location != null">
+        location = #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="fixBy != null">
+        fix_by = #{fixBy,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="type != null">
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="source != null">
+        source = #{source,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        create_by = #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="storekeeper != null">
+        storekeeper = #{storekeeper,jdbcType=INTEGER},
+      </if>
+      <if test="textDesc != null">
+        text_desc = #{textDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        image_desc = #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="finishDesc != null">
+        finish_desc = #{finishDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="createAt != null">
+        create_at = #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="appointAt != null">
+        appoint_at = #{appointAt,jdbcType=INTEGER},
+      </if>
+      <if test="acceptAt != null">
+        accept_at = #{acceptAt,jdbcType=VARCHAR},
+      </if>
+      <if test="hangupAt != null">
+        hangup_at = #{hangupAt,jdbcType=INTEGER},
+      </if>
+      <if test="expireAt != null">
+        expire_at = #{expireAt,jdbcType=VARCHAR},
+      </if>
+      <if test="fixAt != null">
+        fix_at = #{fixAt,jdbcType=INTEGER},
+      </if>
+      <if test="checkAt != null">
+        check_at = #{checkAt,jdbcType=INTEGER},
+      </if>
+      <if test="isPush != null">
+        is_push = #{isPush,jdbcType=INTEGER},
+      </if>
+      <if test="question != null">
+        question = #{question,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="material != null">
+        material = #{material,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="isCompanyManager != null">
+        is_company_manager = #{isCompanyManager,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateIsPush" parameterType="java.util.Map">
+    update malfunction
+    set is_push = #{isPush,jdbcType=INTEGER}
+    where id = #{id}
+  </update>
+
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.sl.ylyy.app_1.entity.MalfunctionWithBLOBs">
+    update malfunction
+    set location = #{location,jdbcType=VARCHAR},
+      fix_by = #{fixBy,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      type = #{type,jdbcType=INTEGER},
+      source = #{source,jdbcType=INTEGER},
+      create_by = #{createBy,jdbcType=INTEGER},
+      storekeeper = #{storekeeper,jdbcType=INTEGER},
+      text_desc = #{textDesc,jdbcType=VARCHAR},
+      image_desc = #{imageDesc,jdbcType=VARCHAR},
+      audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      finish_desc = #{finishDesc,jdbcType=VARCHAR},
+      create_at = #{createAt,jdbcType=INTEGER},
+      appoint_at = #{appointAt,jdbcType=INTEGER},
+      accept_at = #{acceptAt,jdbcType=VARCHAR},
+      hangup_at = #{hangupAt,jdbcType=INTEGER},
+      expire_at = #{expireAt,jdbcType=VARCHAR},
+      fix_at = #{fixAt,jdbcType=INTEGER},
+      check_at = #{checkAt,jdbcType=INTEGER},
+      is_push = #{isPush,jdbcType=INTEGER},
+      question = #{question,jdbcType=LONGVARCHAR},
+      material = #{material,jdbcType=LONGVARCHAR},
+      remark = #{remark,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateHangUp" parameterType="java.util.Map">
+    update malfunction
+    set status = #{status,jdbcType=INTEGER},
+        hangup_at = unix_timestamp(now()),
+        expire_at = #{expireAt,jdbcType=VARCHAR},
+        remark = #{remark,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.Malfunction">
+    update malfunction
+    set location = #{location,jdbcType=VARCHAR},
+      fix_by = #{fixBy,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      type = #{type,jdbcType=INTEGER},
+      source = #{source,jdbcType=INTEGER},
+      create_by = #{createBy,jdbcType=INTEGER},
+      storekeeper = #{storekeeper,jdbcType=INTEGER},
+      text_desc = #{textDesc,jdbcType=VARCHAR},
+      image_desc = #{imageDesc,jdbcType=VARCHAR},
+      audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      finish_desc = #{finishDesc,jdbcType=VARCHAR},
+      create_at = #{createAt,jdbcType=INTEGER},
+      appoint_at = #{appointAt,jdbcType=INTEGER},
+      accept_at = #{acceptAt,jdbcType=VARCHAR},
+      hangup_at = #{hangupAt,jdbcType=INTEGER},
+      expire_at = #{expireAt,jdbcType=VARCHAR},
+      fix_at = #{fixAt,jdbcType=INTEGER},
+      check_at = #{checkAt,jdbcType=INTEGER},
+      is_push = #{isPush,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateAcceptById" parameterType="java.util.Map">
+    update malfunction
+    set status = #{status,jdbcType=INTEGER},
+        accept_at = unix_timestamp(now()),
+        fix_by = #{fixBy}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateExpireById" parameterType="java.util.Map">
+    update malfunction
+    set status = #{status,jdbcType=INTEGER},
+        hangup_at = null,
+        expire_at = null,
+        remark = null
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateAppointById" parameterType="java.util.Map">
+    update malfunction
+    set status = #{status,jdbcType=INTEGER},
+        appoint_at = unix_timestamp(now()),
+        fix_by = #{fixBy}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateCheckById" parameterType="java.util.Map">
+    update malfunction
+    set status = #{status,jdbcType=INTEGER},
+        check_at = unix_timestamp(now())
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

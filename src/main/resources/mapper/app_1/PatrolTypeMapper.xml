@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.PatrolTypeMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.PatrolType">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="company_id" jdbcType="INTEGER" property="companyId"/>
+    <result column="department_id" jdbcType="INTEGER" property="departmentId"/>
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, description,company_id,department_id
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from patrol_type
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectAllPatrolTypes" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from patrol_type where
+    <if test="departmentId!=null">
+      department_id = #{departmentId}
+    </if>
+    <if test="departmentId==null">
+      company_id = #{companyId}
+    </if>
+
+  </select>
+
+  <select id="selectPatrolTypeIds" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+    select
+    id
+    from patrol_type
+    where department_id = #{departmentId}
+  </select>
+
+  <select id="selectPatrolTimes" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select * from patrol_time
+  </select>
+
+  <select id="selectTimeTypeByDepartmentId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+    select id
+    from patrol_time
+  </select>
+
+  <select id="selectTimeTypeAliasById" parameterType="java.lang.Integer" resultType="java.lang.String">
+    select alais from patrol_time
+    where id = #{timeTypeId}
+  </select>
+</mapper>

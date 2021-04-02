@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.MalfunctionLogMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.MalfunctionLog">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="malfunction_id" jdbcType="INTEGER" property="malfunctionId" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="fix_by" jdbcType="INTEGER" property="fixBy" />
+    <result column="appoint_by" jdbcType="INTEGER" property="appointBy" />
+    <result column="appoint_at" jdbcType="INTEGER" property="appointAt" />
+    <result column="accept_at" jdbcType="INTEGER" property="acceptAt" />
+    <result column="hangup_at" jdbcType="INTEGER" property="hangupAt" />
+    <result column="expire_at" jdbcType="VARCHAR" property="expireAt" />
+    <result column="fix_at" jdbcType="INTEGER" property="fixAt" />
+    <result column="check_at" jdbcType="INTEGER" property="checkAt" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    <result column="reason" jdbcType="LONGVARCHAR" property="reason" />
+    <result column="remark" jdbcType="LONGVARCHAR" property="remark" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, malfunction_id, status, fix_by, appoint_by, appoint_at, accept_at, hangup_at, 
+    expire_at, fix_at, check_at
+  </sql>
+  <sql id="Blob_Column_List">
+    reason, remark
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from malfunction_log
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByMid" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select u.user_name as name,ml.reason as content
+    from malfunction_log ml join user u on ml.fix_by=u.id
+    where ml.malfunction_id=#{mid} and ml.reason is not null
+    order by ml.id desc limit 1
+  </select>
+  <select id="selectByMidAndFixBy" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select id
+    from malfunction_log
+    where fix_by = #{fixBy,jdbcType=INTEGER}
+    and malfunction_id = #{mid,jdbcType=INTEGER}
+    group by id desc limit 1
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from malfunction_log
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    insert into malfunction_log (id, malfunction_id, status, 
+      fix_by, appoint_by, appoint_at, 
+      accept_at, hangup_at, expire_at, 
+      fix_at, check_at, reason, 
+      remark)
+    values (#{id,jdbcType=INTEGER}, #{malfunctionId,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
+      #{fixBy,jdbcType=INTEGER}, #{appointBy,jdbcType=INTEGER}, #{appointAt,jdbcType=INTEGER}, 
+      #{acceptAt,jdbcType=INTEGER}, #{hangupAt,jdbcType=INTEGER}, #{expireAt,jdbcType=VARCHAR}, 
+      #{fixAt,jdbcType=INTEGER}, #{checkAt,jdbcType=INTEGER}, #{reason,jdbcType=LONGVARCHAR}, 
+      #{remark,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    insert into malfunction_log
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="malfunctionId != null">
+        malfunction_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="fixBy != null">
+        fix_by,
+      </if>
+      <if test="appointBy != null">
+        appoint_by,
+      </if>
+      <if test="appointAt != null">
+        appoint_at,
+      </if>
+      <if test="acceptAt != null">
+        accept_at,
+      </if>
+      <if test="hangupAt != null">
+        hangup_at,
+      </if>
+      <if test="expireAt != null">
+        expire_at,
+      </if>
+      <if test="fixAt != null">
+        fix_at,
+      </if>
+      <if test="checkAt != null">
+        check_at,
+      </if>
+      <if test="reason != null">
+        reason,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="malfunctionId != null">
+        #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="fixBy != null">
+        #{fixBy,jdbcType=INTEGER},
+      </if>
+      <if test="appointBy != null">
+        #{appointBy,jdbcType=INTEGER},
+      </if>
+      <if test="appointAt != null">
+        #{appointAt,jdbcType=INTEGER},
+      </if>
+      <if test="acceptAt != null">
+        #{acceptAt,jdbcType=INTEGER},
+      </if>
+      <if test="hangupAt != null">
+        #{hangupAt,jdbcType=INTEGER},
+      </if>
+      <if test="expireAt != null">
+        #{expireAt,jdbcType=VARCHAR},
+      </if>
+      <if test="fixAt != null">
+        #{fixAt,jdbcType=INTEGER},
+      </if>
+      <if test="checkAt != null">
+        #{checkAt,jdbcType=INTEGER},
+      </if>
+      <if test="reason != null">
+        #{reason,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    update malfunction_log
+    <set>
+      <if test="malfunctionId != null">
+        malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="fixBy != null">
+        fix_by = #{fixBy,jdbcType=INTEGER},
+      </if>
+      <if test="appointBy != null">
+        appoint_by = #{appointBy,jdbcType=INTEGER},
+      </if>
+      <if test="appointAt != null">
+        appoint_at = #{appointAt,jdbcType=INTEGER},
+      </if>
+      <if test="acceptAt != null">
+        accept_at = #{acceptAt,jdbcType=INTEGER},
+      </if>
+      <if test="hangupAt != null">
+        hangup_at = unix_timestamp(now()),
+      </if>
+      <if test="expireAt != null">
+        expire_at = #{expireAt,jdbcType=VARCHAR},
+      </if>
+      <if test="fixAt != null">
+        fix_at = #{fixAt,jdbcType=INTEGER},
+      </if>
+      <if test="checkAt != null">
+        check_at = #{checkAt,jdbcType=INTEGER},
+      </if>
+      <if test="reason != null">
+        reason = #{reason,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateExpireById" parameterType="java.util.Map">
+    update malfunction_log
+    set status = 8
+    where malfunction_id = #{mId} and status=7 and hangup_at = #{expireAt}
+  </update>
+
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    update malfunction_log
+    set malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      fix_by = #{fixBy,jdbcType=INTEGER},
+      appoint_by = #{appointBy,jdbcType=INTEGER},
+      appoint_at = #{appointAt,jdbcType=INTEGER},
+      accept_at = #{acceptAt,jdbcType=INTEGER},
+      hangup_at = #{hangupAt,jdbcType=INTEGER},
+      expire_at = #{expireAt,jdbcType=VARCHAR},
+      fix_at = #{fixAt,jdbcType=INTEGER},
+      check_at = #{checkAt,jdbcType=INTEGER},
+      reason = #{reason,jdbcType=LONGVARCHAR},
+      remark = #{remark,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <insert id="insertAppoint" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    insert into malfunction_log (id, malfunction_id,status,fix_by, appoint_by, appoint_at)
+    values (#{id,jdbcType=INTEGER}, #{malfunctionId,jdbcType=INTEGER}, #{status,jdbcType=INTEGER},
+            #{fixBy,jdbcType=INTEGER}, #{appointBy,jdbcType=INTEGER}, unix_timestamp(now()))
+  </insert>
+
+
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLogWithBLOBs">
+    update malfunction_log
+    set malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      fix_by = #{fixBy,jdbcType=INTEGER},
+      appoint_by = #{appointBy,jdbcType=INTEGER},
+      appoint_at = #{appointAt,jdbcType=INTEGER},
+      accept_at = #{acceptAt,jdbcType=INTEGER},
+      hangup_at = #{hangupAt,jdbcType=INTEGER},
+      expire_at = #{expireAt,jdbcType=VARCHAR},
+      fix_at = #{fixAt,jdbcType=INTEGER},
+      check_at = #{checkAt,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateByMidAndFixBy" parameterType="java.util.Map">
+    update malfunction_log
+    set status = #{status,jdbcType=INTEGER},
+        check_at = unix_timestamp(now())
+    where malfunction_id = #{mid,jdbcType=INTEGER}
+    and fix_by = #{fixBy}
+  </update>
+
+  <insert id="insertAcceptById" parameterType="com.sl.ylyy.app_1.entity.MalfunctionLog">
+    insert into malfunction_log (id, malfunction_id,status,fix_by, accept_at)
+    values (#{id,jdbcType=INTEGER}, #{malfunctionId,jdbcType=INTEGER}, #{status,jdbcType=INTEGER},
+            #{fixBy,jdbcType=INTEGER},unix_timestamp(now))
+  </insert>
+
+</mapper>

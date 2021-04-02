@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sl.ylyy.manager.dao.Patrol_LogDao">
+
+	
+<!-- resultMap映射 -->
+<resultMap type="com.sl.ylyy.manager.entity.Patrol_Log" id="Patrol_LogResult">
+		<!-- 主键 -->
+		<id property="id" column="id"/>
+		<!-- 一般属性 -->
+		<result property="status" column="status"/>
+		<result property="first_clock_at" column="first_clock_at"/>
+		<result property="second_clock_at" column="second_clock_at"/>
+		<result property="status" column="status"/>
+		<!-- 关联信息 -->
+		<association property="patrolUserInfo" javaType="com.sl.ylyy.manager.entity.UserInfo">
+			<id property="id" column="uid"/>
+		<!--一般属性 -->
+			<result property="user_name" column="uuser_name"/>
+		</association>
+		
+		<!-- 关联信息 -->
+		<association property="patrolInfo" javaType="com.sl.ylyy.manager.entity.PatrolInfo">
+			<id property="id" column="pid"/>
+		<!--一般属性 -->
+			<result property="count" column="pcount"/>
+		</association>
+</resultMap>
+	
+	
+	<select id="findPage" parameterType="com.sl.ylyy.common.utils.PageUtil" resultMap="Patrol_LogResult">
+		SELECT pl.id,pl.patrol_id,pl.status,pl.patrol_by,u.id uid,u.user_name uuser_name,p.id pid,p.count pcount,lc.clock_at first_clock_at,lc2.clock_at second_clock_at  FROM patrol_log pl
+		left JOIN user u on pl.patrol_by=u.id
+		left JOIN `group` g ON u.group_id=g.id
+		INNER JOIN patrol p ON pl.patrol_id=p.id
+		INNER JOIN patrol_point pp ON p.patrol_point_id=pp.id
+		left join (SELECT * FROM ( SELECT *FROM `patrol_log_clock` ORDER BY clock_at )plc GROUP BY patrol_log_id)lc on lc.patrol_log_id = pl.id
+		left join (SELECT * FROM ( SELECT *FROM `patrol_log_clock` ORDER BY clock_at DESC)plc GROUP BY patrol_log_id)lc2 on lc2.patrol_log_id = pl.id
+		where 1=1
+		<if test="params.groupid != null and params.groupid !=''">
+		   and g.id=#{params.groupid}
+		</if>
+		<if test="params.userid != null and params.userid !=''">
+			and u.id=#{params.userid }
+		</if>
+		
+		<if test="params.beginTime != null and params.endTime !=null">
+			and lc.clock_at between #{params.beginTime} and #{params.endTime}
+		</if>
+		order by lc.clock_at desc
+	</select> 
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.SupportMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.Support">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="malfunction_id" jdbcType="INTEGER" property="malfunctionId" />
+    <result column="support_type" jdbcType="INTEGER" property="supportType" />
+    <result column="support_staff" jdbcType="VARCHAR" property="supportStaff" />
+    <result column="support_number" jdbcType="INTEGER" property="supportNumber" />
+    <result column="create_by" jdbcType="INTEGER" property="createBy" />
+    <result column="respond_staff" jdbcType="VARCHAR" property="respondStaff" />
+    <result column="refuse_staff" jdbcType="VARCHAR" property="refuseStaff" />
+    <result column="image_desc" jdbcType="VARCHAR" property="imageDesc" />
+    <result column="audio_desc" jdbcType="VARCHAR" property="audioDesc" />
+    <result column="m_status" jdbcType="INTEGER" property="mStatus" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="create_at" jdbcType="INTEGER" property="createAt" />
+    <result column="support_at" jdbcType="INTEGER" property="supportAt" />
+    <result column="terminate_at" jdbcType="INTEGER" property="terminateAt" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, malfunction_id, support_type, support_staff, support_number, create_by, respond_staff, 
+    refuse_staff, image_desc, audio_desc, m_status, status, create_at, support_at, terminate_at
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from support
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectSupportById" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select
+      s.id,s.malfunction_id as mid,m.location as name,s.image_desc,s.audio_desc,
+      s.support_staff,s.support_number,s.respond_staff,s.refuse_staff,
+      from_unixtime(s.support_at,'%Y-%m-%d %T') as support_at,
+      s.status,s.support_type as type,s.terminate_at
+    from support s
+    left join malfunction m on s.malfunction_id = m.id
+    where s.id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <!-- TODO respond_staff 列 数据格式 userId|时间戳 
+  modify hlc on 2019-8-9 14:03:00
+     如果刚发起支援, 接收人的列表加载时, 没处理, type = 1时 support_staff 包含接收人userid, type = 2时, 应该是此部门的所有人都可以看到此支援, 查询条件应该是department_id
+     type = 2 时未处理完
+   -->
+  <select id="countSupportList" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(s.id) from support s
+    left join malfunction m on s.malfunction_id=m.id
+    left join user u on u.id=s.create_by
+    where
+    (s.refuse_staff is null or s.refuse_staff not like CONCAT('%,',#{user_id},'|%')
+    and s.refuse_staff not like CONCAT(#{user_id},'|%'))
+    and s.status=1 and m.status not in(1,4,5,6) and s.m_status != 2
+    <if test="create_by !=null">
+      and s.create_by=#{create_by}
+    </if>
+    <if test="response != null">
+      and s.create_by != #{user_id}
+      and ((s.support_type = 1 and ((s.support_staff like CONCAT('%,',#{response},',%'))
+      or (s.support_staff like CONCAT(#{response},',%'))
+      or (s.support_staff like CONCAT('%,',#{response}))
+      or (s.support_staff like CONCAT(#{response}))))
+      or (s.support_type = 2 and m.department_id=#{department_id}
+      and
+      (s.support_staff is null or ((LENGTH(s.support_staff)-LENGTH(REPLACE(s.support_staff,',','')))+1) &lt;  s.support_number)))
+    </if>
+  </select>
+  <!-- TODO respond_staff 列 数据格式 userId|时间戳
+  modify hlc on 2019-8-9 14:03:00  
+      如果刚发起支援, 接收人的列表加载时, 没处理, type = 1时 support_staff 包含接收人userid,
+       type = 2时, 应该是此部门的所有人都可以看到此支援, 查询条件应该是department_id
+  -->
+  <select id="selectSupportList" parameterType="java.util.Map" resultType="java.util.Map">
+    select s.id,m.location as name,s.support_type as type,from_unixtime(s.support_at,'%Y-%m-%d %T') as support_at,
+           s.respond_staff as respond_staff,u.user_name as create_by,s.status as status,s.terminate_at
+    from support s
+    left join malfunction m on s.malfunction_id=m.id
+    left join user u on u.id=s.create_by
+    where
+    (s.refuse_staff is null or s.refuse_staff not like CONCAT('%,',#{user_id},'|%')
+    and s.refuse_staff not like CONCAT(#{user_id},'|%'))
+    and s.status=1 and m.status not in(1,4,5,6) and s.m_status != 2
+    <if test="create_by !=null">
+      and s.create_by=#{create_by}
+    </if>
+    <if test="support_at!=null">
+      and s.support_at &lt; #{support_at}
+    </if>
+    <if test="response != null">
+      <!--and s.respond_staff like CONCAT('%',${response},'|%')
+      and ((s.support_type = 1 and ((s.support_staff like CONCAT('%,',${response},'|%'))
+                                or (s.support_staff like CONCAT(${response},'|%'))))-->
+      and s.create_by != #{user_id}
+      and ((s.support_type = 1 and ((s.support_staff like CONCAT('%,',#{response},',%'))
+         or (s.support_staff like CONCAT(#{response},',%'))
+         or (s.support_staff like CONCAT('%,',#{response}))
+         or (s.support_staff like CONCAT(#{response}))))
+      or (s.support_type = 2 and m.department_id=#{department_id}
+      and
+      (s.support_staff is null or ((LENGTH(s.support_staff)-LENGTH(REPLACE(s.support_staff,',','')))+1) &lt;  s.support_number)))
+    </if>
+    order by s.support_at desc
+    limit 0,#{pageSize}
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from support
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.Support">
+    insert into support (id, malfunction_id, support_type, 
+      support_staff, support_number, create_by, 
+      respond_staff, refuse_staff, image_desc, 
+      audio_desc, m_status, status, 
+      create_at, support_at, terminate_at
+      )
+    values (#{id,jdbcType=INTEGER}, #{malfunctionId,jdbcType=INTEGER}, #{supportType,jdbcType=INTEGER}, 
+      #{supportStaff,jdbcType=VARCHAR}, #{supportNumber,jdbcType=INTEGER}, #{createBy,jdbcType=INTEGER}, 
+      #{respondStaff,jdbcType=VARCHAR}, #{refuseStaff,jdbcType=VARCHAR}, #{imageDesc,jdbcType=VARCHAR}, 
+      #{audioDesc,jdbcType=VARCHAR}, #{mStatus,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
+      #{createAt,jdbcType=INTEGER}, #{supportAt,jdbcType=INTEGER}, #{terminateAt,jdbcType=INTEGER}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.Support">
+    insert into support
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="malfunctionId != null">
+        malfunction_id,
+      </if>
+      <if test="supportType != null">
+        support_type,
+      </if>
+      <if test="supportStaff != null">
+        support_staff,
+      </if>
+      <if test="supportNumber != null">
+        support_number,
+      </if>
+      <if test="createBy != null">
+        create_by,
+      </if>
+      <if test="respondStaff != null">
+        respond_staff,
+      </if>
+      <if test="refuseStaff != null">
+        refuse_staff,
+      </if>
+      <if test="imageDesc != null">
+        image_desc,
+      </if>
+      <if test="audioDesc != null">
+        audio_desc,
+      </if>
+      <if test="mStatus != null">
+        m_status,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="createAt != null">
+        create_at,
+      </if>
+      <if test="supportAt != null">
+        support_at,
+      </if>
+      <if test="terminateAt != null">
+        terminate_at,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="malfunctionId != null">
+        #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="supportType != null">
+        #{supportType,jdbcType=INTEGER},
+      </if>
+      <if test="supportStaff != null">
+        #{supportStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="supportNumber != null">
+        #{supportNumber,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="respondStaff != null">
+        #{respondStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="refuseStaff != null">
+        #{refuseStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="mStatus != null">
+        #{mStatus,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createAt != null">
+        #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="supportAt != null">
+        #{supportAt,jdbcType=INTEGER},
+      </if>
+      <if test="terminateAt != null">
+        #{terminateAt,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+
+  <insert id="insertNewSupport" parameterType="com.sl.ylyy.app_1.entity.Support" useGeneratedKeys="true" keyProperty="id">
+    insert into support
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="malfunctionId != null">
+        malfunction_id,
+      </if>
+      <if test="supportType != null">
+        support_type,
+      </if>
+      <if test="supportStaff != null">
+        support_staff,
+      </if>
+      <if test="supportNumber != null">
+        support_number,
+      </if>
+      <if test="createBy != null">
+        create_by,
+      </if>
+      <if test="respondStaff != null">
+        respond_staff,
+      </if>
+      <if test="refuseStaff != null">
+        refuse_staff,
+      </if>
+      <if test="imageDesc != null">
+        image_desc,
+      </if>
+      <if test="audioDesc != null">
+        audio_desc,
+      </if>
+      <if test="mStatus != null">
+        m_status,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+        create_at,
+      <if test="supportAt != null">
+        support_at,
+      </if>
+      <if test="terminateAt != null">
+        terminate_at,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="malfunctionId != null">
+        #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="supportType != null">
+        #{supportType,jdbcType=INTEGER},
+      </if>
+      <if test="supportStaff != null">
+        #{supportStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="supportNumber != null">
+        #{supportNumber,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="respondStaff != null">
+        #{respondStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="refuseStaff != null">
+        #{refuseStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="mStatus != null">
+        #{mStatus,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      unix_timestamp(now()),
+      <if test="supportAt != null">
+        #{supportAt,jdbcType=INTEGER},
+      </if>
+      <if test="terminateAt != null">
+        #{terminateAt,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.Support">
+    update support
+    <set>
+      <if test="malfunctionId != null">
+        malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="supportType != null">
+        support_type = #{supportType,jdbcType=INTEGER},
+      </if>
+      <if test="supportStaff != null">
+        support_staff = #{supportStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="supportNumber != null">
+        support_number = #{supportNumber,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        create_by = #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="respondStaff != null">
+        respond_staff = #{respondStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="refuseStaff != null">
+        refuse_staff = #{refuseStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        image_desc = #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="mStatus != null">
+        m_status = #{mStatus,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createAt != null">
+        create_at = #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="supportAt != null">
+        support_at = #{supportAt,jdbcType=INTEGER},
+      </if>
+      <if test="terminateAt != null">
+        terminate_at = #{terminateAt,jdbcType=INTEGER},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateByMid" parameterType="java.lang.Integer">
+  update support
+  set m_status = 2
+  where malfunction_id = #{malfunctionId} and m_status=1 and status=1
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.Support">
+    update support
+    set malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      support_type = #{supportType,jdbcType=INTEGER},
+      support_staff = #{supportStaff,jdbcType=VARCHAR},
+      support_number = #{supportNumber,jdbcType=INTEGER},
+      create_by = #{createBy,jdbcType=INTEGER},
+      respond_staff = #{respondStaff,jdbcType=VARCHAR},
+      refuse_staff = #{refuseStaff,jdbcType=VARCHAR},
+      image_desc = #{imageDesc,jdbcType=VARCHAR},
+      audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      m_status = #{mStatus,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      create_at = #{createAt,jdbcType=INTEGER},
+      support_at = #{supportAt,jdbcType=INTEGER},
+      terminate_at = #{terminateAt,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateTerminate" parameterType="com.sl.ylyy.app_1.entity.Support">
+    update support
+    <set>
+      <if test="malfunctionId != null">
+        malfunction_id = #{malfunctionId,jdbcType=INTEGER},
+      </if>
+      <if test="supportType != null">
+        support_type = #{supportType,jdbcType=INTEGER},
+      </if>
+      <if test="supportStaff != null">
+        support_staff = #{supportStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="supportNumber != null">
+        support_number = #{supportNumber,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        create_by = #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="respondStaff != null">
+        respond_staff = #{respondStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="refuseStaff != null">
+        refuse_staff = #{refuseStaff,jdbcType=VARCHAR},
+      </if>
+      <if test="imageDesc != null">
+        image_desc = #{imageDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="audioDesc != null">
+        audio_desc = #{audioDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="mStatus != null">
+        m_status = #{mStatus,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createAt != null">
+        create_at = #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="supportAt != null">
+        support_at = #{supportAt,jdbcType=INTEGER},
+      </if>
+        terminate_at = unix_timestamp(now())
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

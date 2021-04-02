@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.ImageDescMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.ImageDesc">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="create_by" jdbcType="INTEGER" property="createBy" />
+    <result column="create_at" jdbcType="INTEGER" property="createAt" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.sl.ylyy.app_1.entity.ImageDesc">
+    <result column="content" jdbcType="LONGVARCHAR" property="content" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, create_by, create_at
+  </sql>
+  <sql id="Blob_Column_List">
+    content
+  </sql>
+
+  <select id="selectIdByCreateByAndContent" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select id from image_desc
+    where content = #{content} and create_by=#{createBy}
+  </select>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select
+    a.id,u.user_name as create_by,from_unixtime(a.create_at,'%Y-%m-%d %T') as create_at,a.content
+    from image_desc a
+    left join user u
+    on a.create_by = u.id
+    where a.id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from image_desc
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.ImageDesc">
+    insert into image_desc (id, create_by, create_at, 
+      content)
+    values (#{id,jdbcType=INTEGER}, #{createBy,jdbcType=INTEGER}, #{createAt,jdbcType=INTEGER}, 
+      #{content,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.ImageDesc">
+    insert into image_desc
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="createBy != null">
+        create_by,
+      </if>
+      <if test="createAt != null">
+        create_at,
+      </if>
+      <if test="content != null">
+        content,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="createAt != null">
+        #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="content != null">
+        #{content,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+
+  <insert id="insertContent" parameterType="java.util.Map">
+    insert into image_desc
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="content != null">
+        content,
+      </if>
+        create_by,
+        create_at
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="content != null">
+        #{content,jdbcType=LONGVARCHAR},
+      </if>
+        #{createBy,jdbcType=INTEGER},
+        unix_timestamp(now())
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.ImageDesc">
+    update image_desc
+    <set>
+      <if test="createBy != null">
+        create_by = #{createBy,jdbcType=INTEGER},
+      </if>
+      <if test="createAt != null">
+        create_at = #{createAt,jdbcType=INTEGER},
+      </if>
+      <if test="content != null">
+        content = #{content,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.sl.ylyy.app_1.entity.ImageDesc">
+    update image_desc
+    set create_by = #{createBy,jdbcType=INTEGER},
+      create_at = #{createAt,jdbcType=INTEGER},
+      content = #{content,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.ImageDesc">
+    update image_desc
+    set create_by = #{createBy,jdbcType=INTEGER},
+      create_at = #{createAt,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

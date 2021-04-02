@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.TipMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.Tip">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="equipment" jdbcType="VARCHAR" property="equipment" />
+    <result column="source" jdbcType="VARCHAR" property="source" />
+    <result column="location" jdbcType="VARCHAR" property="location" />
+    <result column="result" jdbcType="VARCHAR" property="result" />
+    <result column="lec" jdbcType="INTEGER" property="lec" />
+    <result column="class" jdbcType="VARCHAR" property="className" />
+    <result column="measure" jdbcType="VARCHAR" property="measure" />
+    <result column="staff" jdbcType="VARCHAR" property="staff" />
+    <result column="create_id" jdbcType="INTEGER" property="createId" />
+    <result column="qrcode" jdbcType="VARCHAR" property="qrcode" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, equipment, source, location, result, lec, class, measure, staff, create_id, qrcode
+  </sql>
+  <!--
+  |equipment |string|作业活动、项目、设备|
+|source|string|危险源、危险因素|
+|location|string|位置|
+|result|string|导致的事故、后果|
+|lec|int|LEC风险等级|
+|class|string|物业公司管理等级|
+|measure|string|控制措施|
+|staff|string|检查人员|
+|switchingroom|array|配电室|
+  -->
+  <select id="selectTipById" parameterType="java.lang.Integer" resultType="java.util.Map">
+    select equipment, source, location, result, lec, class, measure, staff, create_id
+    from tip where id = #{id}
+  </select>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tip
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tip
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.Tip">
+    insert into tip (id, equipment, source,
+      location, result, lec, 
+      class, measure, staff, 
+      create_id, qrcode)
+    values (#{id,jdbcType=INTEGER}, #{equipment,jdbcType=VARCHAR}, #{source,jdbcType=VARCHAR}, 
+      #{location,jdbcType=VARCHAR}, #{result,jdbcType=VARCHAR}, #{lec,jdbcType=INTEGER}, 
+      #{class,jdbcType=VARCHAR}, #{measure,jdbcType=VARCHAR}, #{staff,jdbcType=VARCHAR}, 
+      #{createId,jdbcType=INTEGER}, #{qrcode,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.Tip">
+    insert into tip
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="equipment != null">
+        equipment,
+      </if>
+      <if test="source != null">
+        source,
+      </if>
+      <if test="location != null">
+        location,
+      </if>
+      <if test="result != null">
+        result,
+      </if>
+      <if test="lec != null">
+        lec,
+      </if>
+      <if test="class != null">
+        class,
+      </if>
+      <if test="measure != null">
+        measure,
+      </if>
+      <if test="staff != null">
+        staff,
+      </if>
+      <if test="createId != null">
+        create_id,
+      </if>
+      <if test="qrcode != null">
+        qrcode,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="equipment != null">
+        #{equipment,jdbcType=VARCHAR},
+      </if>
+      <if test="source != null">
+        #{source,jdbcType=VARCHAR},
+      </if>
+      <if test="location != null">
+        #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="result != null">
+        #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="lec != null">
+        #{lec,jdbcType=INTEGER},
+      </if>
+      <if test="class != null">
+        #{class,jdbcType=VARCHAR},
+      </if>
+      <if test="measure != null">
+        #{measure,jdbcType=VARCHAR},
+      </if>
+      <if test="staff != null">
+        #{staff,jdbcType=VARCHAR},
+      </if>
+      <if test="createId != null">
+        #{createId,jdbcType=INTEGER},
+      </if>
+      <if test="qrcode != null">
+        #{qrcode,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.entity.Tip">
+    update tip
+    <set>
+      <if test="equipment != null">
+        equipment = #{equipment,jdbcType=VARCHAR},
+      </if>
+      <if test="source != null">
+        source = #{source,jdbcType=VARCHAR},
+      </if>
+      <if test="location != null">
+        location = #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="result != null">
+        result = #{result,jdbcType=VARCHAR},
+      </if>
+      <if test="lec != null">
+        lec = #{lec,jdbcType=INTEGER},
+      </if>
+      <if test="class != null">
+        class = #{class,jdbcType=VARCHAR},
+      </if>
+      <if test="measure != null">
+        measure = #{measure,jdbcType=VARCHAR},
+      </if>
+      <if test="staff != null">
+        staff = #{staff,jdbcType=VARCHAR},
+      </if>
+      <if test="createId != null">
+        create_id = #{createId,jdbcType=INTEGER},
+      </if>
+      <if test="qrcode != null">
+        qrcode = #{qrcode,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.Tip">
+    update tip
+    set equipment = #{equipment,jdbcType=VARCHAR},
+      source = #{source,jdbcType=VARCHAR},
+      location = #{location,jdbcType=VARCHAR},
+      result = #{result,jdbcType=VARCHAR},
+      lec = #{lec,jdbcType=INTEGER},
+      class = #{class,jdbcType=VARCHAR},
+      measure = #{measure,jdbcType=VARCHAR},
+      staff = #{staff,jdbcType=VARCHAR},
+      create_id = #{createId,jdbcType=INTEGER},
+      qrcode = #{qrcode,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

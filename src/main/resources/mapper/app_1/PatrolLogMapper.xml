@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sl.ylyy.app_1.dao.PatrolLogMapper">
+  <resultMap id="BaseResultMap" type="com.sl.ylyy.app_1.entity.PatrolLog">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="patrol_id" jdbcType="INTEGER" property="patrolId" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="patrol_by" jdbcType="INTEGER" property="patrolBy" />
+    <result column="first_clock_at" jdbcType="INTEGER" property="firstClockAt" />
+    <result column="second_clock_at" jdbcType="INTEGER" property="secondClockAt" />
+    <result column="third_clock_at" jdbcType="INTEGER" property="thirdClockAt" />
+    <result column="fourth_clock_at" jdbcType="INTEGER" property="fourthClockAt" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, patrol_id, status, patrol_by, first_clock_at, second_clock_at,third_clock_at,fourth_clock_at
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from patrol_log
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectByPatrolId" parameterType="java.util.Map" resultType="java.util.Map">
+    select pl.*,p.count,lc.clock_at,p.time_interval,lc2.clock_at clock_at2
+    from patrol_log pl
+           left join patrol p on pl.patrol_id=p.id
+           left join patrol_time pt on pt.id=p.time_type
+           left join (SELECT * FROM ( SELECT *FROM `patrol_log_clock` ORDER BY clock_at )plc GROUP BY patrol_log_id)lc on lc.patrol_log_id = pl.id
+           left join (SELECT * FROM ( SELECT *FROM `patrol_log_clock` ORDER BY clock_at DESC)plc GROUP BY patrol_log_id)lc2 on lc2.patrol_log_id = pl.id
+    where pl.patrol_id = #{patrolId} AND pl.patrol_by=#{patrolBy}
+
+      and (((pt.alais='early' or pt.alais='evening') and lc.clock_at between #{startTime} and #{endTime})
+      or (pt.alais='weekly' and lc.clock_at between #{weekStart} and #{weekEnd})
+      or (pt.alais='monthly' and lc.clock_at between #{monthStart} and #{monthEnd}))
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from patrol_log
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insertSelective" parameterType="com.sl.ylyy.app_1.entity.PatrolLog" useGeneratedKeys="true" keyProperty="id">
+    insert into patrol_log
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="patrolId != null">
+        patrol_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="patrolBy != null">
+        patrol_by,
+      </if>
+        first_clock_at
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="patrolId != null">
+        #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <!--unix_timestamp(now())-->
+      #{firstClockAt}
+    </trim>
+  </insert>
+
+
+  <insert id="insert" parameterType="com.sl.ylyy.app_1.entity.PatrolLog">
+    insert into patrol_log
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="patrolId != null">
+        patrol_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="patrolBy != null">
+        patrol_by,
+      </if>
+      <if test="firstClockAt != null">
+        first_clock_at,
+      </if>
+      <if test="secondClockAt != null">
+        second_clock_at,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="patrolId != null">
+        #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <if test="firstClockAt != null">
+        #{firstClockAt},
+      </if>
+      <if test="secondClockAt != null">
+        #{secondClockAt},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.sl.ylyy.app_1.info.PatrolLogInfo">
+    update patrol_log
+    <set>
+      <if test="patrolId != null">
+        patrol_id = #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        patrol_by = #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <if test="firstClockAt != null">
+        first_clock_at = #{firstClockAt,jdbcType=INTEGER},
+      </if>
+        second_clock_at = unix_timestamp(now())
+    </set>
+    where patrol_id = #{patrolId,jdbcType=INTEGER} and patrol_by = #{patrolBy}
+          and first_clock_at between #{startTime} and #{endTime}
+  </update>
+
+  <update id="updatePatrolLogById" parameterType="com.sl.ylyy.app_1.entity.PatrolLog">
+    update patrol_log
+    <set>
+      <if test="patrolId != null">
+        patrol_id = #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        patrol_by = #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <if test="firstClockAt != null">
+        first_clock_at = #{firstClockAt,jdbcType=INTEGER},
+      </if>
+      <if test="secondClockAt != null">
+        second_clock_at = #{secondClockAt}
+      </if>
+      <if test="thirdClockAt != null">
+        third_clock_at = #{thirdClockAt,jdbcType=INTEGER},
+      </if>
+      <if test="fourthClockAt != null">
+        fourth_clock_at = #{fourthClockAt},
+      </if>
+    </set>
+    where id=#{id}
+  </update>
+
+  <!--<update id="updatePatrolLog" parameterType="com.sl.ylyy.app_1.entity.PatrolLog">
+    update patrol_log
+    <set>
+      <if test="patrolId != null">
+        patrol_id = #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        patrol_by = #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <if test="firstClockAt != null">
+        first_clock_at = #{firstClockAt,jdbcType=INTEGER},
+      </if>
+      <if test="secondClockAt != null">
+        second_clock_at = #{secondClockAt}
+      </if>
+    </set>
+    where patrol_id = #{patrolId,jdbcType=INTEGER} and patrol_by = #{patrolBy}
+  </update>-->
+
+  <update id="updatePatrolLog" parameterType="java.util.Map">
+    update patrol_log
+    <set>
+      <if test="patrolId != null">
+        patrol_id = #{patrolId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="patrolBy != null">
+        patrol_by = #{patrolBy,jdbcType=INTEGER},
+      </if>
+      <if test="firstClockAt != null">
+        first_clock_at = #{firstClockAt,jdbcType=INTEGER},
+      </if>
+      <if test="secondClockAt != null">
+        second_clock_at = #{secondClockAt}
+      </if>
+    </set>
+    where patrol_id = #{patrolId,jdbcType=INTEGER} and patrol_by = #{patrolBy}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.sl.ylyy.app_1.entity.PatrolLog">
+    update patrol_log
+    set patrol_id = #{patrolId,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      patrol_by = #{patrolBy,jdbcType=INTEGER},
+      first_clock_at = #{firstClockAt,jdbcType=INTEGER},
+      second_clock_at = #{secondClockAt,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+
+  <select id="getClockCountByPatrolLogId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+    select COUNT(*) from patrol_log_clock
+    where patrol_log_id = #{patrolLogId}
+  </select>
+
+
+  <insert id="insertPatrolLogClock" parameterType="java.util.Map">
+    insert into patrol_log_clock
+   (patrol_log_id,clock_at)
+   values
+   (
+    #{patrol_log_id},
+    #{clock_at}
+   )
+  </insert>
+
+</mapper>
